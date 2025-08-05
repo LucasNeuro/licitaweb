@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: pncp-extrator
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: STORAGE_BUCKET
+        value: pncpfiles
+      - key: SELENIUM_HEADLESS
+        value: true
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 8000 

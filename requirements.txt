@@ -1,0 +1,13 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+requests==2.31.0
+supabase==1.2.0
+python-dotenv==1.0.0
+pydantic==2.5.0
+python-multipart==0.0.6
+apscheduler==3.10.4
+selenium==4.15.0
+beautifulsoup4==4.12.2
+pandas==2.1.4
+# Dependências para Render
+gunicorn==21.2.0
