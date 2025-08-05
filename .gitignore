@@ -1,0 +1,139 @@
+# Arquivos de ambiente e configurações sensíveis
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+
+# Arquivos de configuração local
+config.ini
+settings.json
+secrets.json
+
+# Logs
+*.log
+logs/
+log/
+
+# Arquivos temporários
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# IDEs e editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Arquivos de teste
+.coverage
+.pytest_cache/
+.tox/
+htmlcov/
+
+# Arquivos de backup
+*.bak
+*.backup
+*.old
+
+# Arquivos de dados
+*.db
+*.sqlite
+*.sqlite3
+data/
+databases/
+
+# Arquivos de download e upload
+downloads/
+uploads/
+files/
+
+# Arquivos do Chrome/Selenium
+chromedriver*
+geckodriver*
+*.exe
+
+# Arquivos de cache do Python
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Arquivos de sistema
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Arquivos de configuração local
+local_settings.py
+local_config.py
+
+# Arquivos de chaves e certificados
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Arquivos de backup do Git
+*.orig
+*.rej
+
+# Arquivos de lock
+package-lock.json
+yarn.lock
+Pipfile.lock
+
+# Arquivos de relatório
+reports/
+*.report
+*.out
+
+# Arquivos de debug
+debug.log
+error.log
+access.log
+
+# Arquivos de configuração do Render
+.render-buildlogs/
+
+# Arquivos de configuração do Supabase
+.supabase/ 
