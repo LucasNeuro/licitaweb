@@ -43,19 +43,35 @@ class SchedulerSimples:
     def configurar(self, ativo, hora):
         self.config = {"ativo": ativo, "hora": hora}
         
+        # Remove job existente
         if self.scheduler.get_job("extracao_diaria"):
             self.scheduler.remove_job("extracao_diaria")
         
         if ativo:
             h, m = hora.split(":")
+            
+            # Log para debug
+            print(f"🕐 Configurando scheduler para {hora} (Brasil)")
+            print(f"🌍 Timezone: America/Sao_Paulo")
+            
             self.scheduler.add_job(
                 self.executar_automatico,
                 CronTrigger(hour=int(h), minute=int(m), timezone="America/Sao_Paulo"),
-                id="extracao_diaria"
+                id="extracao_diaria",
+                replace_existing=True
             )
             
+            # Força inicialização
             if not self.scheduler.running:
                 self.scheduler.start()
+                print("✅ Scheduler iniciado com sucesso!")
+            
+            # Mostra próxima execução
+            job = self.scheduler.get_job("extracao_diaria")
+            if job and job.next_run_time:
+                print(f"⏰ Próxima execução: {job.next_run_time}")
+        else:
+            print("❌ Scheduler desativado")
     
     async def executar_automatico(self):
         print("🤖 EXECUÇÃO AUTOMÁTICA INICIADA")
@@ -63,15 +79,29 @@ class SchedulerSimples:
     
     def get_status(self):
         job = self.scheduler.get_job("extracao_diaria")
-        proxima_execucao = job.next_run_time.isoformat() if job and job.next_run_time else None
         
-        return {
+        # Informações detalhadas
+        status = {
             "ativo": self.config["ativo"],
-            "proxima_execucao": proxima_execucao,
-            "ultima_execucao": None,  # TODO: implementar tracking
             "configuracao": self.config,
-            "estatisticas": {"total_extraidos": 0, "total_erros": 0}  # TODO: implementar
+            "scheduler_running": self.scheduler.running,
+            "job_exists": job is not None,
+            "proxima_execucao": None,
+            "proxima_execucao_brasil": None,
+            "hora_atual_utc": datetime.utcnow().isoformat(),
+            "hora_atual_brasil": datetime.now().isoformat(),
+            "estatisticas": {"total_extraidos": 0, "total_erros": 0}
         }
+        
+        if job and job.next_run_time:
+            status["proxima_execucao"] = job.next_run_time.isoformat()
+            # Converte para horário do Brasil para visualização
+            import pytz
+            brasil_tz = pytz.timezone('America/Sao_Paulo')
+            proxima_brasil = job.next_run_time.astimezone(brasil_tz)
+            status["proxima_execucao_brasil"] = proxima_brasil.strftime("%d/%m/%Y %H:%M:%S %Z")
+        
+        return status
 
 
 # Instâncias globais
@@ -260,6 +290,65 @@ async def estatisticas_gerais():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/debug/scheduler",
+         summary="🔧 Debug Scheduler",
+         description="Informações detalhadas do scheduler para debug")
+async def debug_scheduler():
+    """Debug completo do scheduler"""
+    import pytz
+    
+    job = scheduler.scheduler.get_job("extracao_diaria")
+    brasil_tz = pytz.timezone('America/Sao_Paulo')
+    utc_now = datetime.utcnow()
+    brasil_now = utc_now.replace(tzinfo=pytz.UTC).astimezone(brasil_tz)
+    
+    debug_info = {
+        "scheduler_running": scheduler.scheduler.running,
+        "config": scheduler.config,
+        "job_exists": job is not None,
+        "horarios": {
+            "utc_atual": utc_now.isoformat(),
+            "brasil_atual": brasil_now.strftime("%d/%m/%Y %H:%M:%S %Z"),
+            "render_timezone": "UTC (padrão)"
+        }
+    }
+    
+    if job:
+        debug_info["job_info"] = {
+            "id": job.id,
+            "next_run_utc": job.next_run_time.isoformat() if job.next_run_time else None,
+            "next_run_brasil": job.next_run_time.astimezone(brasil_tz).strftime("%d/%m/%Y %H:%M:%S %Z") if job.next_run_time else None,
+            "trigger": str(job.trigger)
+        }
+    
+    return debug_info
+
+
+@app.post("/debug/test-scheduler",
+          summary="🧪 Testar Scheduler",
+          description="Configura scheduler para executar em 2 minutos (teste)")
+async def test_scheduler():
+    """Configura scheduler para teste em 2 minutos"""
+    import pytz
+    
+    # Calcula horário 2 minutos no futuro (Brasil)
+    brasil_tz = pytz.timezone('America/Sao_Paulo')
+    agora_brasil = datetime.now(brasil_tz)
+    teste_horario = agora_brasil + timedelta(minutes=2)
+    hora_teste = teste_horario.strftime("%H:%M")
+    
+    # Configura scheduler
+    scheduler.configurar(True, hora_teste)
+    
+    return {
+        "message": f"Scheduler configurado para teste em 2 minutos",
+        "horario_atual_brasil": agora_brasil.strftime("%d/%m/%Y %H:%M:%S %Z"),
+        "horario_teste": teste_horario.strftime("%d/%m/%Y %H:%M:%S %Z"),
+        "configuracao": hora_teste,
+        "status": scheduler.get_status()
+    }
 
 
 # Inicialização

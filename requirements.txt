@@ -1,27 +1,30 @@
-# Core FastAPI
-fastapi>=0.104.0,<0.115.0
-uvicorn[standard]>=0.24.0,<0.32.0
-pydantic>=2.5.0,<3.0.0
+# ========================================
+# DEPENDÊNCIAS ESSENCIAIS PARA RENDER
+# ========================================
 
-# HTTP e Requests
-requests>=2.31.0,<3.0.0
-python-multipart>=0.0.6,<0.1.0
+# FastAPI Core (obrigatório)
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.5.0
 
-# Supabase
-supabase>=2.0.0,<3.0.0
+# HTTP Requests (obrigatório)
+requests==2.31.0
 
-# Configuração
-python-dotenv>=1.0.0,<2.0.0
+# Supabase Database (obrigatório)
+supabase==2.3.4
 
-# Scheduler
-apscheduler>=3.10.0,<4.0.0
+# Configuração Environment (obrigatório)
+python-dotenv==1.0.0
 
-# Web Scraping
-selenium>=4.15.0,<5.0.0
-beautifulsoup4>=4.12.0,<5.0.0
+# Scheduler Automático (obrigatório)
+apscheduler==3.10.4
 
-# Data Processing
-pandas>=2.1.0,<3.0.0
+# Web Scraping (obrigatório)
+selenium==4.15.0
+beautifulsoup4==4.12.2
 
-# Server para Render
-gunicorn>=21.0.0,<23.0.0
+# Server WSGI para Render (obrigatório)
+gunicorn==21.2.0
+
+# Timezone para Brasil (obrigatório)
+pytz==2023.3
