@@ -244,24 +244,44 @@ licitaweb/
 ## CONFIGURAÇÃO
 
 ### 1. Variáveis de Ambiente
-Crie um arquivo `.env` na raiz do projeto:
+O projeto usa um arquivo `.env` para configurações sensíveis. **NUNCA commite este arquivo no Git**.
 
-```env
-SUPABASE_URL=sua_url_do_supabase
-SUPABASE_KEY=sua_chave_do_supabase
+**Para desenvolvimento local:**
+```bash
+# Copie o template
+cp env.example .env
+
+# Edite o arquivo .env com suas configurações
+SUPABASE_URL=https://seu-projeto.supabase.co
+SUPABASE_KEY=sua_chave_anon_ou_service_role
 STORAGE_BUCKET=pncpfiles
-SELENIUM_HEADLESS=true
+SELENIUM_HEADLESS=false  # true para produção
 ```
 
-### 2. Instalar Dependências
+**Para Render (produção):**
+Configure as variáveis no dashboard do Render:
+- `SUPABASE_URL`
+- `SUPABASE_KEY`
+- `STORAGE_BUCKET=pncpfiles`
+- `SELENIUM_HEADLESS=true`
+
+### 2. Arquivos Protegidos
+O `.gitignore` protege automaticamente:
+- `.env` e arquivos de ambiente
+- Logs e arquivos temporários
+- Cache do Python
+- Arquivos do Chrome/Selenium
+- Configurações locais
+
+### 3. Instalar Dependências
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configurar Banco de Dados
+### 4. Configurar Banco de Dados
 Execute o script `executar_views.sql` no SQL Editor do Supabase para criar as views do dashboard.
 
-### 4. Iniciar Sistema
+### 5. Iniciar Sistema
 ```bash
 python run.py
 ```
