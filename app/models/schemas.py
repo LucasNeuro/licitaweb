@@ -17,9 +17,9 @@ class ExtrairDiaRequest(BaseModel):
     """Request para extração de dia específico com configurações otimizadas"""
     data: Optional[str] = None  # YYYY-MM-DD, se None usa dia anterior
     salvar_arquivos: bool = False  # Por padrão não salva arquivos para economizar espaço
-    max_editais: int = 30  # Limite máximo de editais a processar
-    max_paginas: int = 2  # Máximo de páginas a buscar
-    limit_por_pagina: int = 25  # Editais por página
+    max_editais: int = 1000  # Limite alto para processar TODOS
+    max_paginas: int = 20  # Máximo de páginas para cobertura total
+    limit_por_pagina: int = 100  # Editais por página para eficiência
 
 
 class EditalResponse(BaseModel):

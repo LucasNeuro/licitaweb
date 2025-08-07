@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
+import os
 from datetime import datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -38,7 +39,10 @@ class SchedulerSimples:
     def __init__(self, extrator):
         self.extrator = extrator
         self.scheduler = AsyncIOScheduler()
-        self.config = {"ativo": False, "hora": "06:00"}
+        # Configuração padrão (ativo em produção)
+        ambiente = os.getenv("ENVIRONMENT", "development")
+        ativo_padrao = ambiente == "production"
+        self.config = {"ativo": ativo_padrao, "hora": "06:00"}
     
     def configurar(self, ativo, hora):
         self.config = {"ativo": ativo, "hora": hora}
@@ -214,10 +218,10 @@ async def status_scheduler():
 
 @app.post("/executar-agora",
           response_model=EditalResponse,
-          summary="▶️ Executar Agora",
+          summary="Executar Agora",
           description="Executa a extração do dia anterior imediatamente")
 async def executar_agora():
-    """2️⃣ Executa extração do dia anterior imediatamente"""
+    """Executa extração do dia anterior imediatamente"""
     try:
         # Executa em background
         task = asyncio.create_task(extrator.executar_extracao_dia())
@@ -237,10 +241,10 @@ async def executar_agora():
 
 @app.post("/extrair-dia-anterior",
           response_model=EditalResponse,
-          summary="📅 Extrair Dia Anterior",
+          summary="Extrair Dia Anterior",
           description="Extrai editais do dia anterior (ou data específica)")
 async def extrair_dia_anterior(request: ExtrairDiaRequest):
-    """3️⃣ Extrai editais do dia anterior (ou data específica)"""
+    """Extrai editais do dia anterior (ou data específica)"""
     try:
         data_extracao = request.data
         if not data_extracao:
@@ -351,12 +355,42 @@ async def test_scheduler():
     }
 
 
+@app.post("/production/setup-scheduler",
+          summary="🏭 Configurar Scheduler Produção",
+          description="Configura scheduler para produção (06:00 diário)")
+async def setup_production_scheduler():
+    """Configura scheduler para produção"""
+    
+    # Configura para 06:00 todos os dias
+    scheduler.configurar(ativo=True, hora="06:00")
+    
+    return {
+        "message": "Scheduler configurado para produção",
+        "horario": "06:00 (Brasil)",
+        "status": "Ativo",
+        "proxima_execucao": scheduler.get_status().get("proxima_execucao_brasil", "N/A"),
+        "ambiente": os.getenv("ENVIRONMENT", "development")
+    }
+
+
 # Inicialização
 @app.on_event("startup")
 async def startup_event():
     """Eventos de inicialização"""
     print("🚀 PNCP Extrator iniciado!")
     print(f"📊 Configurações: {settings.is_configured()}")
+    
+    # Auto-configura scheduler em produção
+    ambiente = os.getenv("ENVIRONMENT", "development")
+    if ambiente == "production":
+        print("🏭 AMBIENTE DE PRODUÇÃO DETECTADO")
+        print("⚙️ Configurando scheduler automático...")
+        
+        # Configura scheduler para 06:00 (Brasil)
+        scheduler.configurar(ativo=True, hora="06:00")
+        print("✅ Scheduler configurado para 06:00 (Brasil)")
+    else:
+        print("🧪 Ambiente de desenvolvimento - Scheduler manual")
 
 
 @app.on_event("shutdown")

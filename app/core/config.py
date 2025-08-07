@@ -5,7 +5,8 @@ Configurações do sistema
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Carrega .env do diretório raiz
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 
 class Settings:
     """Configurações da aplicação"""
