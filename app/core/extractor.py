@@ -64,11 +64,25 @@ class PNCPExtractor:
         chrome_options.add_experimental_option('useAutomationExtension', False)
         
         try:
-            self.driver = webdriver.Chrome(options=chrome_options)
+            # Tenta usar webdriver-manager para Render
+            from webdriver_manager.chrome import ChromeDriverManager
+            from selenium.webdriver.chrome.service import Service
+            
+            service = Service(ChromeDriverManager().install())
+            self.driver = webdriver.Chrome(service=service, options=chrome_options)
+            print("✅ Selenium configurado com webdriver-manager")
             return True
+            
         except Exception as e:
-            print(f"❌ Erro ao configurar Selenium: {e}")
-            return False
+            print(f"⚠️ Erro com webdriver-manager: {e}")
+            try:
+                # Fallback para configuração manual
+                self.driver = webdriver.Chrome(options=chrome_options)
+                print("✅ Selenium configurado manualmente")
+                return True
+            except Exception as e2:
+                print(f"❌ Erro ao configurar Selenium: {e2}")
+                return False
     
     def buscar_editais_recentes(self, data_filtro=None, max_paginas=10, limit_por_pagina=50):
         """Busca editais específicos do dia no PNCP (estratégia otimizada)"""

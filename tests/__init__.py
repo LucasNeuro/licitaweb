@@ -1,3 +1,0 @@
-"""
-Tests - Testes do sistema
-"""

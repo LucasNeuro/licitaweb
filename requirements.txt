@@ -22,6 +22,7 @@ apscheduler==3.10.4
 # Web Scraping (obrigatório)
 selenium==4.15.0
 beautifulsoup4==4.12.2
+webdriver-manager==4.0.1
 
 # Server WSGI para Render (obrigatório)
 gunicorn==21.2.0
