@@ -1,68 +1,69 @@
-#!/usr/bin/env python3
-"""
-🚀 PNCP Extrator Final
-Sistema completo de extração automática de editais do PNCP
-"""
-
 import uvicorn
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Configura variáveis de ambiente diretamente (evita problemas de codificação)
+os.environ['SUPABASE_URL'] = 'https://aomlquaeitmuqwihdnqn.supabase.co'
+os.environ['SUPABASE_KEY'] = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvbWxxdWFlaXRtdXF3aWhkbnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzNDczNTUsImV4cCI6MjA2OTkyMzM1NX0.BB4j5ymmMmoavZ2SoZvrBgYY_K5rxEXh1ghPivgBOOk'
+os.environ['STORAGE_BUCKET'] = 'pncpfiles'
+os.environ['SELENIUM_HEADLESS'] = 'false'
+os.environ['ENVIRONMENT'] = 'development'
+os.environ['PORT'] = '8000'
+print("OK - Configuracoes carregadas diretamente no codigo")
 
 def main():
     # Configurações
     host = "127.0.0.1"
     port = int(os.getenv("PORT", 8000))
     
-    print("🚀 PNCP EXTRATOR FINAL")
+    print(" PNCP EXTRATOR FINAL")
     print("=" * 60)
-    print("🎯 SISTEMA COMPLETO DE EXTRAÇÃO DE EDITAIS")
+    print(" SISTEMA COMPLETO DE EXTRACAO DE EDITAIS")
     print()
-    print("✨ FUNCIONALIDADES:")
-    print("   🔍 Busca automática de editais mais recentes")
-    print("   📋 Extração completa via APIs + Selenium")
-    print("   💾 Salvamento automático no Supabase")
-    print("   📎 Upload de arquivos para Storage")
-    print("   🤖 Scheduler configurável")
-    print("   ⚡ Performance otimizada (1-2s por edital)")
+    print(" FUNCIONALIDADES:")
+    print(f"Busca automatica de editais mais recentes")
+    print(f"Extracao completa via APIs + Selenium")
+    print(f"Salvamento automatico no Supabase")
+    print(f"Upload de arquivos para Storage")
+    print(f"Scheduler configuravel")
+    print(f"Performance otimizada (-2s por edital)")
     print("=" * 60)
-    print("📋 ENDPOINTS PRINCIPAIS:")
-    print(f"   🏠 Root: http://localhost:{port}/")
-    print(f"   📚 Swagger: http://localhost:{port}/docs")
-    print(f"   🏥 Health: http://localhost:{port}/health")
+    print(" ENDPOINTS PRINCIPAIS:")
+    print(f" Root: http://localhost:{port}/")
+    print(f" Swagger: http://localhost:{port}/docs")
+    print(f" Health: http://localhost:{port}/health")
     print()
-    print("🤖 EXTRAÇÃO AUTOMÁTICA:")
-    print(f"   ⚙️ Configurar: POST http://localhost:{port}/configurar-scheduler")
-    print(f"   ▶️ Executar: POST http://localhost:{port}/executar-agora")
-    print(f"   📅 Dia anterior: POST http://localhost:{port}/extrair-dia-anterior")
+    print(" EXTRACAO AUTOMATICA:")
+    print(f" Configurar: POST http://localhost:{port}/configurar-scheduler")
+    print(f" Executar: POST http://localhost:{port}/executar-agora")
+    print(f" Dia anterior: POST http://localhost:{port}/extrair-dia-anterior")
     print("=" * 60)
-    print("💡 COMO USAR:")
-    print("   1. Configure o scheduler com horário desejado")
-    print("   2. Sistema extrai TODOS os editais automaticamente")
-    print("   3. Dados salvos no Supabase + arquivos no Storage")
+    print(" COMO USAR:")
+    print(f". Configure o scheduler com horario desejado")
+    print(f"2. Sistema extrai TODOS os editais automaticamente")
+    print(f"3. Dados salvos no Supabase + arquivos no Storage")
     print("=" * 60)
-    print("⚠️  REQUISITOS:")
-    print("   - Chrome/Chromium instalado (para Selenium)")
-    print("   - Variáveis SUPABASE_URL e SUPABASE_KEY configuradas")
-    print("   - Tabela 'editais_completos' criada no Supabase")
-    print("   - Bucket 'pncpfiles' criado no Storage")
+    print(f"REQUISITOS:")
+    print(f"- Chrome/Chromium instalado (para Selenium)")
+    print(f"- Variaveis SUPABASE_URL e SUPABASE_KEY configuradas")
+    print(f"- Tabela 'editais_completos' criada no Supabase")
+    print(f"- Bucket 'pncpfiles' criado no Storage")
     print("=" * 60)
-    print("💡 Pressione Ctrl+C para parar o servidor")
+    print(" Pressione Ctrl+C para parar o servidor")
     print("=" * 60)
     
-    # Verifica variáveis de ambiente
+    # Verifica variaveis de ambiente
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_key = os.getenv("SUPABASE_KEY")
     
     if not supabase_url or not supabase_key:
-        print("⚠️  CONFIGURE AS VARIÁVEIS NO .env:")
-        print("   SUPABASE_URL=sua_url_supabase")
-        print("   SUPABASE_KEY=sua_chave_supabase")
-        print("   STORAGE_BUCKET=pncpfiles")
+        print(f"CONFIGURE AS VARIAVEIS NO .env:")
+        print(f"SUPABASE_URL=sua_url_supabase")
+        print(f"SUPABASE_KEY=sua_chave_supabase")
+        print(f"STORAGE_BUCKET=pncpfiles")
         print()
     else:
-        print("✅ Variáveis de ambiente configuradas")
+        print(" Variaveis de ambiente configuradas")
         print()
     
     try:
@@ -75,9 +76,9 @@ def main():
             access_log=True
         )
     except KeyboardInterrupt:
-        print("\n👋 Servidor parado pelo usuário")
+        print("\n Servidor parado pelo usuário")
     except Exception as e:
-        print(f"❌ Erro ao iniciar servidor: {e}")
+        print(f" Erro ao iniciar servidor: {e}")
 
 if __name__ == "__main__":
     main()

@@ -43,13 +43,13 @@ class PNCPExtractor:
         self.url_base = f"{settings.PNCP_BASE_URL}/app/editais"
     
     def configurar_selenium(self):
-        """Configura Selenium otimizado para Render"""
+        """Configura Selenium otimizado e seguro"""
         chrome_options = Options()
         
         if settings.SELENIUM_HEADLESS:
             chrome_options.add_argument("--headless")
         
-        # Configurações específicas para Render
+        # Configurações de segurança e performance
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
@@ -60,8 +60,34 @@ class PNCPExtractor:
         chrome_options.add_argument("--disable-web-security")
         chrome_options.add_argument("--allow-running-insecure-content")
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        
+        # 🚫 PREVENIR MÚLTIPLAS ABAS
+        chrome_options.add_argument("--disable-popup-blocking")
+        chrome_options.add_argument("--disable-new-tab-first-run")
+        chrome_options.add_argument("--disable-background-timer-throttling")
+        chrome_options.add_argument("--disable-backgrounding-occluded-windows")
+        chrome_options.add_argument("--disable-renderer-backgrounding")
+        chrome_options.add_argument("--disable-background-networking")
+        chrome_options.add_argument("--disable-default-apps")
+        chrome_options.add_argument("--disable-sync")
+        chrome_options.add_argument("--disable-translate")
+        
+        # Configurações de automação
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option('useAutomationExtension', False)
+        
+        # Preferências para evitar popups e novas abas
+        prefs = {
+            "profile.default_content_setting_values": {
+                "notifications": 2,  # Bloquear notificações
+                "popups": 2,         # Bloquear popups
+                "geolocation": 2,    # Bloquear localização
+                "media_stream": 2,   # Bloquear câmera/microfone
+            },
+            "profile.default_content_settings.popups": 0,
+            "profile.managed_default_content_settings.images": 2,  # Bloquear imagens
+        }
+        chrome_options.add_experimental_option("prefs", prefs)
         
         try:
             # Tenta usar webdriver-manager para Render
@@ -70,18 +96,18 @@ class PNCPExtractor:
             
             service = Service(ChromeDriverManager().install())
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
-            print("✅ Selenium configurado com webdriver-manager")
+            print("Selenium configurado com webdriver-manager")
             return True
             
         except Exception as e:
-            print(f"⚠️ Erro com webdriver-manager: {e}")
+            print(f" Erro com webdriver-manager: {e}")
             try:
                 # Fallback para configuração manual
                 self.driver = webdriver.Chrome(options=chrome_options)
-                print("✅ Selenium configurado manualmente")
+                print(" Selenium configurado manualmente")
                 return True
             except Exception as e2:
-                print(f"❌ Erro ao configurar Selenium: {e2}")
+                print(f" Erro ao configurar Selenium: {e2}")
                 return False
     
     def buscar_editais_recentes(self, data_filtro=None, max_paginas=10, limit_por_pagina=50):
@@ -89,8 +115,8 @@ class PNCPExtractor:
         if not data_filtro:
             data_filtro = (datetime.now() - timedelta(days=1)).date()
         
-        print(f"🔍 ESTRATÉGIA OTIMIZADA: Buscando TODOS os editais de {data_filtro}")
-        print(f"📊 Configuração: até {max_paginas} páginas × {limit_por_pagina} editais = máximo {max_paginas * limit_por_pagina} editais")
+        print(f" ESTRATEGIA OTIMIZADA: Buscando TODOS os editais de {data_filtro}")
+        print(f" Configuracao: ate {max_paginas} paginas x {limit_por_pagina} editais = maximo {max_paginas * limit_por_pagina} editais")
         
         if not self.configurar_selenium():
             return []
@@ -105,8 +131,8 @@ class PNCPExtractor:
                 # URL otimizada - busca por editais mais recentes primeiro
                 url_pagina = f"{self.url_base}?q=&pagina={pagina}&tam_pagina={limit_por_pagina}&ordenacao=data_desc"
                 
-                print(f"   📄 Página {pagina}: {url_pagina}")
-                print(f"   🎯 Buscando editais de: {data_formatada}")
+                print(f"Pagina {pagina}: {url_pagina}")
+                print(f"Buscando editais de: {data_formatada}")
                 
                 self.driver.get(url_pagina)
                 time.sleep(2)
@@ -118,10 +144,10 @@ class PNCPExtractor:
                     containers = soup.find_all("a", class_="br-item")
                     
                     if not containers:
-                        print(f"   ❌ Nenhum container encontrado na página {pagina}")
+                        print(f"Nenhum container encontrado na pagina {pagina}")
                         break
                     
-                    print(f"   📋 Encontrados {len(containers)} editais na página {pagina}")
+                    print(f"Encontrados {len(containers)} editais na pagina {pagina}")
                     
                     editais_pagina = []
                     data_mais_antiga_pagina = None
@@ -148,7 +174,7 @@ class PNCPExtractor:
                                                 try:
                                                     data_edital = datetime.strptime(data_str, "%Y-%m-%d").date()
                                                 except ValueError:
-                                                    print(f"     ⚠️ {edital_data['id_pncp']} - formato de data não reconhecido: '{data_str}'")
+                                                    print(f"{edital_data['id_pncp']} - formato de data nao reconhecido: '{data_str}'")
                                     
                                     if data_edital:
                                         if not data_mais_antiga_pagina or data_edital < data_mais_antiga_pagina:
@@ -156,51 +182,62 @@ class PNCPExtractor:
                                         
                                         if data_edital >= data_filtro:
                                             editais_pagina.append(edital_data)
-                                            print(f"     ✅ {edital_data['id_pncp']} - {data_edital}")
+                                            print(f"{edital_data['id_pncp']} - {data_edital}")
                                         else:
-                                            print(f"     ⏭️ {edital_data['id_pncp']} - data muito antiga: {data_edital}")
+                                            print(f"{edital_data['id_pncp']} - data muito antiga: {data_edital}")
                                     else:
-                                        # Se não conseguiu converter a data, inclui mesmo assim
+                                        # Se nao conseguiu converter a data, inclui mesmo assim
                                         editais_pagina.append(edital_data)
-                                        print(f"     ⚠️ {edital_data['id_pncp']} - data inválida: '{data_str}'")
+                                        print(f"{edital_data['id_pncp']} - data invalida: '{data_str}'")
                                 
                                 except Exception as e:
-                                    print(f"     ❌ Erro ao processar data: {e}")
+                                    print(f"Erro ao processar data: {e}")
                                     editais_pagina.append(edital_data)
                         
                         except Exception as e:
-                            print(f"     ❌ Erro ao processar container: {e}")
+                            print(f"Erro ao processar container: {e}")
                             continue
                     
                     editais_encontrados.extend(editais_pagina)
-                    print(f"   ✅ {len(editais_pagina)} editais válidos na página {pagina}")
+                    print(f"{len(editais_pagina)} editais validos na pagina {pagina}")
                     
-                    # Limite de segurança alto para pegar TODOS os editais
+                    # Limite de seguranca alto para pegar TODOS os editais
                     if len(editais_encontrados) >= 1000:  # Limite muito alto
-                        print(f"   🛑 Limite de segurança (1000 editais) atingido, parando busca")
+                        print(f"Limite de seguranca (1000 editais) atingido, parando busca")
                         break
                     
-                    # Para apenas se TODA a página for anterior ao filtro
+                    # Para apenas se TODA a pagina for anterior ao filtro
                     if data_mais_antiga_pagina and data_mais_antiga_pagina < data_filtro and len(editais_pagina) == 0:
-                        print(f"   🛑 Página inteira anterior ao filtro ({data_mais_antiga_pagina}), parando")
+                        print(f"Pagina inteira anterior ao filtro ({data_mais_antiga_pagina}), parando")
                         break
                     
-                    # Continua se ainda há editais válidos na página
+                    # Continua se ainda ha editais validos na pagina
                     if len(editais_pagina) > 0:
-                        print(f"   ✅ Página ainda tem editais válidos, continuando...")
+                        print(f"Pagina ainda tem editais validos, continuando...")
                     else:
-                        print(f"   ⚠️ Nenhum edital válido nesta página, mas continuando...")
+                        print(f"Nenhum edital valido nesta pagina, mas continuando...")
                 
                 except Exception as e:
-                    print(f"   ❌ Erro ao processar página {pagina}: {e}")
+                    print(f"Erro ao processar pagina {pagina}: {e}")
                     break
-            
-        finally:
-            if self.driver:
-                self.driver.quit()
         
-        print(f"🎯 Total de editais encontrados: {len(editais_encontrados)}")
+        except Exception as e:
+            print(f"Erro geral na busca: {e}")
+            return []
+        
+        print(f"Total de editais encontrados: {len(editais_encontrados)}")
         return editais_encontrados
+    
+    def fechar_driver(self):
+        """Fecha o driver Selenium"""
+        if self.driver:
+            try:
+                self.driver.quit()
+                self.driver = None
+                print(" Driver Selenium fechado")
+            except Exception as e:
+                print(f" Erro ao fechar driver: {e}")
+                self.driver = None
     
     def normalizar_data(self, data_str):
         """Normaliza diferentes formatos de data"""
@@ -247,36 +284,35 @@ class PNCPExtractor:
                 "texto_completo": texto_completo
             }
             
-            # Extração com regex
+            # Extração com regex - CORRIGIDO para lidar com " | " como separador
             edital_match = re.search(r'Edital\s+n[°º]?\s*(\d+/\d+)', texto_completo, re.IGNORECASE)
             dados["edital"] = edital_match.group(0) if edital_match else ""
             
-            modalidade_match = re.search(r'Modalidade[^:]*:\s*([^|]+)', texto_completo, re.IGNORECASE)
+            # CORRIGIDO: Remove " | " antes do valor
+            modalidade_match = re.search(r'Modalidade[^:]*:\s*\|?\s*([^|]+)', texto_completo, re.IGNORECASE)
             dados["modalidade"] = modalidade_match.group(1).strip() if modalidade_match else ""
             
-            # Regex mais robusto para data
-            data_match = re.search(r'Última\s+Atualização[^:]*:\s*([^|]+)', texto_completo, re.IGNORECASE)
+            # CORRIGIDO: Captura data mesmo com " | " antes
+            data_match = re.search(r'Última\s+Atualização[^:]*:\s*\|?\s*(\d{2}/\d{2}/\d{4})', texto_completo, re.IGNORECASE)
             data_extraida = data_match.group(1).strip() if data_match else ""
             dados["ultima_atualizacao"] = self.normalizar_data(data_extraida)
             
-            # Debug: mostra o que foi extraído
-            if not dados["ultima_atualizacao"]:
-                print(f"     🔍 Debug - Data extraída: '{data_extraida}'")
-                print(f"     🔍 Debug - Texto completo: {texto_completo[:200]}...")
-            
-            orgao_match = re.search(r'Órgão[^:]*:\s*([^|]+)', texto_completo, re.IGNORECASE)
+            # CORRIGIDO: Remove " | " antes do valor
+            orgao_match = re.search(r'Órgão[^:]*:\s*\|?\s*([^|]+)', texto_completo, re.IGNORECASE)
             dados["orgao"] = orgao_match.group(1).strip() if orgao_match else ""
             
-            local_match = re.search(r'Local[^:]*:\s*([^|]+)', texto_completo, re.IGNORECASE)
+            # CORRIGIDO: Remove " | " antes do valor
+            local_match = re.search(r'Local[^:]*:\s*\|?\s*([^|]+)', texto_completo, re.IGNORECASE)
             dados["local"] = local_match.group(1).strip() if local_match else ""
             
-            objeto_match = re.search(r'Objeto[^:]*:\s*(.+)', texto_completo, re.IGNORECASE)
+            # CORRIGIDO: Remove " | " antes do valor
+            objeto_match = re.search(r'Objeto[^:]*:\s*\|?\s*([^|]+)', texto_completo, re.IGNORECASE)
             dados["objeto"] = objeto_match.group(1).strip() if objeto_match else ""
             
             return dados
             
         except Exception as e:
-            print(f"   ⚠️ Erro ao extrair dados: {e}")
+            print(f"Erro ao extrair dados: {e}")
             return None
     
     def extrair_edital_completo_hibrido(self, id_pncp, salvar_arquivos=True):
@@ -285,14 +321,14 @@ class PNCPExtractor:
             if not id_pncp or "/" not in id_pncp:
                 return None
             
-            print(f"     🚀 EXTRAÇÃO COMPLETA HÍBRIDA: {id_pncp}")
+            print(f"EXTRAÇÃO COMPLETA HÍBRIDA: {id_pncp}")
             
             # Separa componentes do ID
             cnpj, ano, numero = id_pncp.split('/')
             
             # === 1. EXTRAÇÃO VIA SELENIUM (PÁGINA DETALHADA) ===
             url_detalhada = f"{settings.PNCP_BASE_URL}/app/editais/{id_pncp}"
-            print(f"     📄 Acessando página: {url_detalhada}")
+            print(f"Acessando pagina: {url_detalhada}")
             
             # Configura Selenium se necessário
             if not self.driver:
@@ -310,7 +346,7 @@ class PNCPExtractor:
             
             # === 2. EXTRAÇÃO VIA APIs (DADOS ESTRUTURADOS) ===
             base_url = f"{settings.PNCP_API_URL}/orgaos/{cnpj}/compras/{ano}/{numero}"
-            print(f"     🔗 Buscando APIs: {base_url}")
+            print(f"Buscando APIs: {base_url}")
             
             # Busca dados das APIs
             itens = []
@@ -320,51 +356,51 @@ class PNCPExtractor:
             
             # API de Itens
             try:
-                print(f"       📋 Buscando itens...")
+                print(f"Buscando itens...")
                 itens_response = self.session.get(f"{base_url}/itens", timeout=15)
                 if itens_response.status_code == 200:
                     itens = itens_response.json()
-                    print(f"       ✅ {len(itens)} itens encontrados")
+                    print(f"{len(itens)} itens encontrados")
                 else:
-                    print(f"       ⚠️ Itens: Status {itens_response.status_code}")
+                    print(f"Itens: Status {itens_response.status_code}")
             except Exception as e:
-                print(f"       ❌ Erro itens: {e}")
+                print(f"Erro itens: {e}")
             
             # API de Histórico
             try:
-                print(f"       📜 Buscando histórico...")
+                print(f"Buscando historico...")
                 historico_response = self.session.get(f"{base_url}/historico", timeout=15)
                 if historico_response.status_code == 200:
                     historico = historico_response.json()
-                    print(f"       ✅ {len(historico)} eventos no histórico")
+                    print(f"{len(historico)} eventos no historico")
                 else:
-                    print(f"       ⚠️ Histórico: Status {historico_response.status_code}")
+                    print(f"Historico: Status {historico_response.status_code}")
             except Exception as e:
-                print(f"       ❌ Erro histórico: {e}")
+                print(f"Erro historico: {e}")
             
             # API de Arquivos
             try:
-                print(f"       📎 Buscando arquivos...")
+                print(f"Buscando arquivos...")
                 arquivos_response = self.session.get(f"{base_url}/arquivos", timeout=15)
                 if arquivos_response.status_code == 200:
                     arquivos = arquivos_response.json()
-                    print(f"       ✅ {len(arquivos)} arquivos encontrados")
+                    print(f"{len(arquivos)} arquivos encontrados")
                 else:
-                    print(f"       ⚠️ Arquivos: Status {arquivos_response.status_code}")
+                    print(f"Arquivos: Status {arquivos_response.status_code}")
             except Exception as e:
-                print(f"       ❌ Erro arquivos: {e}")
+                print(f"Erro arquivos: {e}")
             
             # API do Órgão
             try:
-                print(f"       🏢 Buscando dados do órgão...")
+                print(f"Buscando dados do orgao...")
                 orgao_response = self.session.get(f"{settings.PNCP_API_URL}/orgaos/{cnpj}", timeout=15)
                 if orgao_response.status_code == 200:
                     dados_orgao = orgao_response.json()
-                    print(f"       ✅ Dados do órgão obtidos")
+                    print(f"Dados do orgao obtidos")
                 else:
-                    print(f"       ⚠️ Órgão: Status {orgao_response.status_code}")
+                    print(f"Orgao: Status {orgao_response.status_code}")
             except Exception as e:
-                print(f"       ❌ Erro órgão: {e}")
+                print(f"Erro orgao: {e}")
             
             # === 3. MONTA DADOS COMPLETOS ===
             dados = {
@@ -378,7 +414,7 @@ class PNCPExtractor:
             }
             
             # === 4. EXTRAÇÃO DE DADOS DA PÁGINA (SELENIUM) ===
-            print(f"     📄 Extraindo dados da página HTML...")
+            print(f"Extraindo dados da pagina HTML...")
             
             # Data de divulgação no PNCP
             data_divulgacao_match = re.search(r'Data\s+de\s+divulgação\s+no\s+PNCP[:\s]*(\d{2}/\d{2}/\d{4})', texto_pagina, re.IGNORECASE)
@@ -460,7 +496,7 @@ class PNCPExtractor:
             dados["fonte"] = fonte_match.group(1).strip() if fonte_match else ""
             
             # === 5. DADOS ESTRUTURADOS (APIs) ===
-            print(f"     📊 Processando dados estruturados...")
+            print(f"Processando dados estruturados...")
             
             # Edital básico
             dados["edital"] = f"Edital {numero}/{ano}"
@@ -499,35 +535,35 @@ class PNCPExtractor:
             
             # === 6. SALVAMENTO DE ARQUIVOS (SE SOLICITADO) ===
             if salvar_arquivos and arquivos:
-                print(f"     📎 Processando {len(arquivos)} arquivos...")
+                print(f"Processando {len(arquivos)} arquivos...")
                 for i, arquivo in enumerate(arquivos, 1):
                     try:
-                        print(f"       [{i}/{len(arquivos)}] {arquivo.get('nome', 'arquivo')}...")
+                        print(f"[{i}/{len(arquivos)}] {arquivo.get('nome', 'arquivo')}...")
                         arquivo_info = self.processar_arquivo(arquivo, id_pncp)
                         if arquivo_info:
                             arquivo.update(arquivo_info)
-                            print(f"       ✅ Arquivo processado e salvo no bucket")
+                            print(f"Arquivo processado e salvo no bucket")
                         else:
-                            print(f"       ⚠️ Falha no processamento do arquivo")
+                            print(f"Falha no processamento do arquivo")
                     except Exception as e:
-                        print(f"       ❌ Erro no arquivo {i}: {e}")
+                        print(f"Erro no arquivo {i}: {e}")
             
             # === 7. RESUMO DOS DADOS EXTRAÍDOS ===
-            print(f"     ✅ EXTRAÇÃO COMPLETA FINALIZADA:")
-            print(f"        📅 Data divulgação PNCP: {dados.get('data_divulgacao_pncp', 'N/A')}")
-            print(f"        📅 Data abertura: {dados.get('data_abertura', 'N/A')}")
-            print(f"        🏢 Órgão: {dados.get('orgao', 'N/A')[:50]}...")
-            print(f"        📋 Modalidade: {dados.get('modalidade', 'N/A')}")
-            print(f"        📍 Situação: {dados.get('situacao', 'N/A')}")
-            print(f"        💰 Valor: {dados.get('valor', 'N/A')}")
-            print(f"        📊 Itens: {dados.get('total_itens', 0)}")
-            print(f"        📎 Anexos: {dados.get('total_anexos', 0)}")
-            print(f"        📜 Histórico: {dados.get('total_historico', 0)}")
+            print(f"EXTRAÇÃO COMPLETA FINALIZADA:")
+            print(f"Data divulgacao PNCP: {dados.get('data_divulgacao_pncp', 'N/A')}")
+            print(f"Data abertura: {dados.get('data_abertura', 'N/A')}")
+            print(f"Orgao: {dados.get('orgao', 'N/A')[:50]}...")
+            print(f"Modalidade: {dados.get('modalidade', 'N/A')}")
+            print(f"Situacao: {dados.get('situacao', 'N/A')}")
+            print(f"Valor: {dados.get('valor', 'N/A')}")
+            print(f"Itens: {dados.get('total_itens', 0)}")
+            print(f"Anexos: {dados.get('total_anexos', 0)}")
+            print(f"Historico: {dados.get('total_historico', 0)}")
             
             return dados
             
         except Exception as e:
-            print(f"     ❌ Erro ao extrair página detalhada: {e}")
+            print(f"Erro ao extrair pagina detalhada: {e}")
             return None
 
     def extrair_edital_completo_api(self, id_pncp, salvar_arquivos=False):
@@ -631,7 +667,7 @@ class PNCPExtractor:
             }
             
         except Exception as e:
-            print(f"❌ Erro ao extrair via API {id_pncp}: {e}")
+            print(f" Erro ao extrair via API {id_pncp}: {e}")
             return None
     
     def inferir_objeto(self, itens):
@@ -650,12 +686,12 @@ class PNCPExtractor:
             url_download = arquivo.get('url', '')
             tamanho = arquivo.get('tamanho', 0)
             
-            print(f"         📎 Processando: {nome_arquivo}")
-            print(f"         🔗 URL: {url_download}")
-            print(f"         📊 Tamanho: {tamanho} bytes")
+            print(f"Processando: {nome_arquivo}")
+            print(f"URL: {url_download}")
+            print(f"Tamanho: {tamanho} bytes")
             
             if not url_download:
-                print(f"         ❌ URL de download não encontrada")
+                print(f"URL de download não encontrada")
                 return {
                     "nome": nome_arquivo,
                     "tamanho": tamanho,
@@ -666,7 +702,7 @@ class PNCPExtractor:
                 }
             
             # === 1. DOWNLOAD DO ARQUIVO ===
-            print(f"         ⬇️ Fazendo download...")
+            print(f"Fazendo download...")
             
             try:
                 response = self.session.get(url_download, timeout=30, stream=True)
@@ -676,10 +712,10 @@ class PNCPExtractor:
                 conteudo_arquivo = response.content
                 tamanho_real = len(conteudo_arquivo)
                 
-                print(f"         ✅ Download concluído: {tamanho_real} bytes")
+                print(f"Download concluído: {tamanho_real} bytes")
                 
             except Exception as e:
-                print(f"         ❌ Erro no download: {e}")
+                print(f"Erro no download: {e}")
                 return {
                     "nome": nome_arquivo,
                     "tamanho": tamanho,
@@ -690,7 +726,7 @@ class PNCPExtractor:
                 }
             
             # === 2. UPLOAD PARA BUCKET ===
-            print(f"         ⬆️ Fazendo upload para bucket...")
+            print(f"Fazendo upload para bucket...")
             
             try:
                 # Nome único para o arquivo no bucket
@@ -710,8 +746,8 @@ class PNCPExtractor:
                     # Gera URL pública
                     url_publica = self.supabase.storage.from_(self.bucket_name).get_public_url(nome_unico)
                     
-                    print(f"         ✅ Upload concluído!")
-                    print(f"         🔗 URL pública: {url_publica[:80]}...")
+                    print(f"Upload concluído!")
+                    print(f"URL pública: {url_publica[:80]}...")
                     
                     return {
                         "nome": nome_arquivo,
@@ -724,7 +760,7 @@ class PNCPExtractor:
                         "url_original": url_download
                     }
                 else:
-                    print(f"         ❌ Falha no upload")
+                    print(f"Falha no upload")
                     return {
                         "nome": nome_arquivo,
                         "tamanho": tamanho_real,
@@ -735,7 +771,7 @@ class PNCPExtractor:
                     }
                     
             except Exception as e:
-                print(f"         ❌ Erro no upload: {e}")
+                print(f"Erro no upload: {e}")
                 return {
                     "nome": nome_arquivo,
                     "tamanho": tamanho_real if 'tamanho_real' in locals() else tamanho,
@@ -746,7 +782,7 @@ class PNCPExtractor:
                 }
                 
         except Exception as e:
-            print(f"         ❌ Erro geral no processamento: {e}")
+            print(f"Erro geral no processamento: {e}")
             return {
                 "nome": arquivo.get('nome', 'erro'),
                 "tamanho": 0,
@@ -795,7 +831,7 @@ class PNCPExtractor:
             
             if fazer_upload and url_original:
                 try:
-                    print(f"     📥 Baixando {titulo[:30]}...")
+                    print(f"Baixando {titulo[:30]}...")
                     
                     response = self.session.get(url_original, timeout=30, stream=True)
                     response.raise_for_status()
@@ -807,11 +843,11 @@ class PNCPExtractor:
                     arquivo_info["tamanho"] = len(file_bytes)
                     arquivo_info["nome_arquivo"] = nome_arquivo
                     
-                    print(f"     📊 Tamanho: {len(file_bytes):,} bytes")
+                    print(f"Tamanho: {len(file_bytes):,} bytes")
                     
                     storage_path = f"editais/{edital_id}/{nome_arquivo}"
                     
-                    print(f"     ☁️ Enviando para Storage...")
+                    print(f"Enviando para Storage...")
                     
                     try:
                         result = self.supabase.storage.from_(self.bucket_name).upload(
@@ -822,7 +858,7 @@ class PNCPExtractor:
                         upload_ok = True
                     except Exception as upload_error:
                         if "duplicate" in str(upload_error).lower():
-                            print(f"     🔄 Arquivo existe, substituindo...")
+                            print(f"Arquivo existe, substituindo...")
                             try:
                                 self.supabase.storage.from_(self.bucket_name).remove([storage_path])
                                 result = self.supabase.storage.from_(self.bucket_name).upload(
@@ -832,79 +868,79 @@ class PNCPExtractor:
                                 )
                                 upload_ok = True
                             except Exception as retry_error:
-                                print(f"     ❌ Falha na substituição: {str(retry_error)[:50]}...")
+                                print(f"Falha na substituição: {str(retry_error)[:50]}...")
                                 upload_ok = False
                         else:
-                            print(f"     ❌ Erro no upload: {str(upload_error)[:50]}...")
+                            print(f"Erro no upload: {str(upload_error)[:50]}...")
                             upload_ok = False
                     
                     if upload_ok:
                         storage_url = self.supabase.storage.from_(self.bucket_name).get_public_url(storage_path)
                         arquivo_info["storage_url"] = storage_url
                         arquivo_info["upload_sucesso"] = True
-                        print(f"     ✅ Upload concluído!")
+                        print(f"Upload concluído!")
                     else:
-                        print(f"     ❌ Falha no upload")
+                        print(f"Falha no upload")
                         
                 except Exception as e:
-                    print(f"     ❌ Erro no upload: {str(e)[:50]}...")
+                    print(f"Erro no upload: {str(e)[:50]}...")
                     arquivo_info["erro_upload"] = str(e)
             
             return arquivo_info
             
         except Exception as e:
-            print(f"     ❌ Erro ao processar arquivo: {e}")
+            print(f"Erro ao processar arquivo: {e}")
             return None
     
     def salvar_supabase(self, dados):
         """Salva dados na tabela editais_completos"""
         try:
-            print(f"   🔄 Tentando salvar {dados['id_pncp']}...")
+            print(f"Tentando salvar {dados['id_pncp']}...")
             
             try:
                 result = self.supabase.table("editais_completos").insert(dados).execute()
                 if result.data:
                     id_salvo = result.data[0].get("id")
-                    print(f"   ✅ Inserido com ID: {id_salvo}")
+                    print(f"Inserido com ID: {id_salvo}")
                     return id_salvo
                 else:
-                    print(f"   ⚠️ Insert sem dados retornados")
+                    print(f"Insert sem dados retornados")
                     return None
             except Exception as insert_error:
-                print(f"   ⚠️ Insert falhou: {str(insert_error)[:100]}...")
+                print(f"Insert falhou: {str(insert_error)[:100]}...")
                 
                 if "duplicate" in str(insert_error).lower() or "unique" in str(insert_error).lower():
-                    print(f"   🔄 Tentando update...")
+                    print(f"Tentando update...")
                     try:
                         result = self.supabase.table("editais_completos").update(dados).eq("id_pncp", dados["id_pncp"]).execute()
                         if result.data:
                             id_salvo = result.data[0].get("id")
-                            print(f"   ✅ Atualizado com ID: {id_salvo}")
+                            print(f"Atualizado com ID: {id_salvo}")
                             return id_salvo
                         else:
-                            print(f"   ⚠️ Update sem dados retornados")
+                            print(f"Update sem dados retornados")
                             return None
                     except Exception as update_error:
-                        print(f"   ❌ Update falhou: {str(update_error)[:100]}...")
+                        print(f"Update falhou: {str(update_error)[:100]}...")
                         raise Exception(f"Insert e Update falharam: {insert_error}")
                 else:
                     raise Exception(f"Erro no insert: {insert_error}")
             
         except Exception as e:
-            print(f"   ❌ ERRO CRÍTICO ao salvar: {e}")
+            print(f"ERRO CRÍTICO ao salvar: {e}")
             
             if "policy" in str(e).lower() or "rls" in str(e).lower():
-                print(f"   💡 PROBLEMA: Row Level Security bloqueando")
+                print(f"PROBLEMA: Row Level Security bloqueando")
             elif "permission" in str(e).lower():
-                print(f"   💡 PROBLEMA: Permissões insuficientes")
+                print(f"PROBLEMA: Permissões insuficientes")
             elif "network" in str(e).lower():
-                print(f"   💡 PROBLEMA: Erro de rede")
+                print(f"PROBLEMA: Erro de rede")
             
             return None
     
     async def executar_extracao_dia(self, data_extracao=None, salvar_arquivos=False, max_editais=50):
         """Executa extração de um dia específico com limites otimizados"""
-        print("🚀 INICIANDO EXTRAÇÃO DO DIA (OTIMIZADA)")
+        print(" INICIANDO EXTRAÇÃO DO DIA (OTIMIZADA)")
         print("=" * 50)
         
         start_time = time.time()
@@ -914,9 +950,9 @@ class PNCPExtractor:
         elif isinstance(data_extracao, str):
             data_extracao = datetime.strptime(data_extracao, "%Y-%m-%d").date()
         
-        print(f"📅 Data de extração: {data_extracao}")
-        print(f"📊 Limite máximo de editais: {max_editais}")
-        print(f"💾 Salvar arquivos: {salvar_arquivos}")
+        print(f"Data de extracao: {data_extracao}")
+        print(f" Limite maximo de editais: {max_editais}")
+        print(f" Salvar arquivos: {salvar_arquivos}")
         
         # 1. Busca TODOS os editais do dia anterior (sem limites)
         editais_encontrados = self.buscar_editais_recentes(
@@ -935,10 +971,10 @@ class PNCPExtractor:
             }
         
         # 2. PROCESSA TODOS OS EDITAIS (sem limite)
-        print(f"🎯 Processando TODOS os {len(editais_encontrados)} editais do dia anterior")
+        print(f" Processando TODOS os {len(editais_encontrados)} editais do dia anterior")
         
         # 3. Extrai e salva cada edital
-        print(f"\n📋 Processando {len(editais_encontrados)} editais...")
+        print(f"\n Processando {len(editais_encontrados)} editais...")
         
         salvos = []
         erros = []
@@ -949,23 +985,44 @@ class PNCPExtractor:
                 if not id_pncp:
                     continue
                 
-                print(f"[{i}/{len(editais_encontrados)}] 📋 {id_pncp}")
+                print(f"[{i}/{len(editais_encontrados)}]  {id_pncp}")
                 
-                # Verifica se já existe (SEMPRE ATUALIZA)
+                # Verifica se já existe (VERIFICAÇÃO INTELIGENTE)
                 existing = self.supabase.table("editais_completos")\
-                    .select("id, ultima_atualizacao")\
+                    .select("id, ultima_atualizacao, data_coleta")\
                     .eq("id_pncp", id_pncp)\
                     .execute()
                 
                 edital_existente = None
+                deve_extrair = True
+                
                 if existing.data:
                     edital_existente = existing.data[0]
-                    print(f"   🔄 Já existe (ID: {edital_existente['id']}) - EXTRAINDO PARA ATUALIZAR...")
+                    ultima_coleta = edital_existente.get("data_coleta")
+                    
+                    # Se foi coletado hoje, pula
+                    if ultima_coleta:
+                        data_coleta = datetime.fromisoformat(ultima_coleta.replace('Z', '+00:00'))
+                        hoje = datetime.now()
+                        
+                        if data_coleta.date() == hoje.date():
+                            print(f"Ja existe e foi coletado hoje (ID: {edital_existente['id']}) - PULANDO...")
+                            deve_extrair = False
+                        else:
+                            print(f"Ja existe mas foi coletado antes (ID: {edital_existente['id']}) - ATUALIZANDO...")
+                    else:
+                        print(f"Ja existe sem data de coleta (ID: {edital_existente['id']}) - ATUALIZANDO...")
                 else:
-                    print(f"   ✨ Novo edital - EXTRAINDO PARA INSERIR...")
+                    print(f"Novo edital - EXTRAINDO PARA INSERIR...")
                 
-                # Extrai dados completos: Selenium + APIs + Arquivos
-                dados_completos = self.extrair_edital_completo_hibrido(id_pncp, salvar_arquivos=salvar_arquivos)
+                # Só extrai se necessário
+                dados_completos = None
+                if deve_extrair:
+                    dados_completos = self.extrair_edital_completo_hibrido(id_pncp, salvar_arquivos=salvar_arquivos)
+                else:
+                    # Pula este edital
+                    print(f"Pulando edital {id_pncp} - ja foi processado hoje")
+                    continue
                 
                 if dados_completos:
                     # Salva (INSERT ou UPDATE automático)
@@ -973,21 +1030,21 @@ class PNCPExtractor:
                     if supabase_id:
                         salvos.append(id_pncp)
                         if edital_existente:
-                            print(f"   ✅ ATUALIZADO ID: {supabase_id}")
+                            print(f"ATUALIZADO ID: {supabase_id}")
                         else:
-                            print(f"   ✅ INSERIDO ID: {supabase_id}")
+                            print(f"INSERIDO ID: {supabase_id}")
                     else:
-                        print("   ❌ FALHA AO SALVAR NO SUPABASE")
+                        print(f"FALHA AO SALVAR NO SUPABASE")
                         erros.append({"id_pncp": id_pncp, "erro": "Falha ao salvar no Supabase"})
                 else:
-                    print("   ❌ Falha na extração de dados completos")
-                    erros.append({"id_pncp": id_pncp, "erro": "Falha na extração de dados"})
+                    print(f"Falha na extracao de dados completos")
+                    erros.append({"id_pncp": id_pncp, "erro": "Falha na extracao de dados"})
                 
                 # Pausa reduzida
                 await asyncio.sleep(0.2)  # Reduzido de 0.3 para 0.2
                 
             except Exception as e:
-                print(f"   ❌ Erro: {e}")
+                print(f" Erro: {e}")
                 erros.append({"id_pncp": id_pncp, "erro": str(e)})
         
         tempo_total = round(time.time() - start_time, 2)
@@ -1010,41 +1067,62 @@ class PNCPExtractor:
             }
         }
         
-        print(f"\n🎉 EXTRAÇÃO OTIMIZADA CONCLUÍDA!")
-        print(f"📊 Encontrados: {resultado['total_encontrados']}")
-        print(f"💾 Salvos: {resultado['total_salvos']}")
-        print(f"❌ Erros: {resultado['total_erros']}")
-        print(f"⏱️ Tempo: {tempo_total}s")
+        print(f"\nEXTRAÇÃO OTIMIZADA CONCLUÍDA!")
+        print(f"Encontrados: {resultado['total_encontrados']}")
+        print(f"Salvos: {resultado['total_salvos']}")
+        print(f"Erros: {resultado['total_erros']}")
+        print(f"Tempo: {tempo_total}s")
+        
+        # Fecha o driver Selenium
+        self.fechar_driver()
         
         return resultado
     
-    async def executar_extracao_inteligente(self, data_extracao=None, salvar_arquivos=False, max_editais=50):
-        """Executa extração inteligente: sempre D-1, verifica existentes e atualiza mudanças"""
-        print("🧠 INICIANDO EXTRAÇÃO INTELIGENTE")
+    async def executar_extracao_inteligente(self, dias_retroativos=1, salvar_arquivos=False):
+        """Executa extração inteligente com dias retroativos configurável"""
+        print("INICIANDO EXTRAÇÃO INTELIGENTE")
         print("=" * 50)
         
         start_time = time.time()
         
-        if not data_extracao:
-            data_extracao = (datetime.now() - timedelta(days=1)).date()
-        elif isinstance(data_extracao, str):
-            data_extracao = datetime.strptime(data_extracao, "%Y-%m-%d").date()
+        data_final = datetime.now().date()
+        data_inicial = data_final - timedelta(days=dias_retroativos)
         
-        print(f"📅 Data de extração: {data_extracao}")
-        print(f"📊 Limite máximo de editais: {max_editais}")
-        print(f"💾 Salvar arquivos: {salvar_arquivos}")
+        print(f"Periodo: {data_inicial} a {data_final}")
+        print(f"Dias retroativos: {dias_retroativos}")
+        print(f"Salvar arquivos: {salvar_arquivos}")
+        print()
         
-        # 1. Busca editais do dia anterior
-        editais_encontrados = self.buscar_editais_recentes(
-            data_filtro=data_extracao,
-            max_paginas=3,  # Busca mais páginas para garantir cobertura
-            limit_por_pagina=25
-        )
+        todos_editais = []
+        novos_total = []
+        atualizados_total = []
+        erros_total = []
         
-        if not editais_encontrados:
+        # Processa cada dia do período
+        for dia_offset in range(dias_retroativos, -1, -1):
+            data_extracao = data_final - timedelta(days=dia_offset)
+            
+            print(f"Processando {data_extracao}...")
+            
+            # Busca editais do dia - SEMPRE extração completa
+            editais_encontrados = self.buscar_editais_recentes(
+                data_filtro=data_extracao,
+                max_paginas=50,  # Sempre máximo para pegar TODOS
+                limit_por_pagina=100
+            )
+            
+            if not editais_encontrados:
+                print(f"  Nenhum edital encontrado em {data_extracao}")
+                continue
+            
+            print(f"  Encontrados: {len(editais_encontrados)} editais")
+            todos_editais.extend(editais_encontrados)
+        
+        if not todos_editais:
+            self.fechar_driver()
             return {
                 "success": False,
-                "message": f"Nenhum edital encontrado para {data_extracao}",
+                "message": f"Nenhum edital encontrado no período",
                 "total_encontrados": 0,
                 "total_novos": 0,
                 "total_atualizados": 0,
@@ -1052,122 +1130,114 @@ class PNCPExtractor:
                 "tempo_execucao": round(time.time() - start_time, 2)
             }
         
-        # 2. Limita o número de editais processados
-        # PROCESSA TODOS OS EDITAIS (estratégia inteligente)
-        print(f"🎯 Processando TODOS os {len(editais_encontrados)} editais com verificação inteligente")
+        print()
+        print(f"TOTAL no período: {len(todos_editais)} editais")
+        print(f"Processando com verificação inteligente...")
+        print()
         
-        # 3. Processa cada edital com verificação inteligente
-        print(f"\n📋 Processando {len(editais_encontrados)} editais...")
-        
-        novos = []
-        atualizados = []
-        erros = []
-        
-        for i, edital_basico in enumerate(editais_encontrados, 1):
+        for i, edital_basico in enumerate(todos_editais, 1):
             try:
                 id_pncp = edital_basico.get("id_pncp")
                 if not id_pncp:
                     continue
                 
-                print(f"[{i}/{len(editais_encontrados)}] 📋 {id_pncp}")
+                print(f"[{i}/{len(todos_editais)}] {id_pncp}")
                 
-                # Verifica se já existe na base
+                # Verifica se já existe na base (VERIFICAÇÃO INTELIGENTE)
                 existing = self.supabase.table("editais_completos")\
-                    .select("id, ultima_atualizacao, updated_at")\
+                    .select("id, ultima_atualizacao, data_coleta")\
                     .eq("id_pncp", id_pncp)\
                     .execute()
                 
+                edital_existente = None
+                deve_extrair = True
+                
                 if existing.data:
                     edital_existente = existing.data[0]
-                    print(f"   🔄 Já existe (ID: {edital_existente['id']})")
+                    ultima_coleta = edital_existente.get("data_coleta")
                     
-                    # Verifica se precisa atualizar (comparando datas)
-                    data_existente = edital_existente.get('ultima_atualizacao', '')
-                    data_nova = edital_basico.get('ultima_atualizacao', '')
-                    
-                    if data_nova != data_existente:
-                        print(f"   📅 Atualização detectada: {data_existente} → {data_nova}")
+                    # Se foi coletado hoje, pula
+                    if ultima_coleta:
+                        data_coleta = datetime.fromisoformat(ultima_coleta.replace('Z', '+00:00'))
+                        hoje = datetime.now()
                         
-                        # Extrai dados completos atualizados: Selenium + APIs + Arquivos
-                        dados_completos = self.extrair_edital_completo_hibrido(id_pncp, salvar_arquivos=salvar_arquivos)
-                        
-                        if dados_completos:
-                            # Atualiza registro existente
-                            try:
-                                result = self.supabase.table("editais_completos")\
-                                    .update(dados_completos)\
-                                    .eq("id_pncp", id_pncp)\
-                                    .execute()
-                                
-                                if result.data:
-                                    atualizados.append(id_pncp)
-                                    print(f"   ✅ ATUALIZADO ID: {edital_existente['id']}")
-                                else:
-                                    print("   ❌ FALHA AO ATUALIZAR")
-                                    erros.append({"id_pncp": id_pncp, "erro": "Falha ao atualizar"})
-                            except Exception as e:
-                                print(f"   ❌ Erro na atualização: {e}")
-                                erros.append({"id_pncp": id_pncp, "erro": str(e)})
+                        if data_coleta.date() == hoje.date():
+                            print(f" Ja existe e foi coletado hoje (ID: {edital_existente['id']}) - PULANDO...")
+                            deve_extrair = False
                         else:
-                            print("   ❌ Falha na extração de dados atualizados")
-                            erros.append({"id_pncp": id_pncp, "erro": "Falha na extração de dados"})
+                            print(f" Ja existe mas foi coletado antes (ID: {edital_existente['id']}) - ATUALIZANDO...")
                     else:
-                        print(f"   ⏭️ Sem mudanças, mantendo existente")
-                        continue
+                        print(f" Ja existe sem data de coleta (ID: {edital_existente['id']}) - ATUALIZANDO...")
                 else:
-                    print(f"   🆕 Novo edital detectado")
-                    
-                    # Extrai dados completos: Selenium + APIs + Arquivos para novo edital
+                    print(f" Novo edital - EXTRAINDO PARA INSERIR...")
+                
+                # Só extrai se necessário
+                dados_completos = None
+                if deve_extrair:
                     dados_completos = self.extrair_edital_completo_hibrido(id_pncp, salvar_arquivos=salvar_arquivos)
-                    
-                    if dados_completos:
-                        # Salva novo registro
-                        supabase_id = self.salvar_supabase(dados_completos)
-                        if supabase_id:
-                            novos.append(id_pncp)
-                            print(f"   ✅ NOVO SALVO ID: {supabase_id}")
+                else:
+                    # Pula este edital
+                    print(f" Pulando edital {id_pncp} - ja foi processado hoje")
+                    continue
+                
+                # Processa dados extraídos
+                if dados_completos:
+                    # Salva (INSERT ou UPDATE automático)
+                    supabase_id = self.salvar_supabase(dados_completos)
+                    if supabase_id:
+                        if edital_existente:
+                            atualizados_total.append(id_pncp)
+                            print(f"ATUALIZADO ID: {supabase_id}")
                         else:
-                            print("   ❌ FALHA AO SALVAR NOVO")
-                            erros.append({"id_pncp": id_pncp, "erro": "Falha ao salvar novo"})
+                            novos_total.append(id_pncp)
+                            print(f"INSERIDO ID: {supabase_id}")
                     else:
-                        print("   ❌ Falha na extração de dados para novo")
-                        erros.append({"id_pncp": id_pncp, "erro": "Falha na extração de dados"})
+                        print(f"FALHA AO SALVAR NO SUPABASE")
+                        erros_total.append({"id_pncp": id_pncp, "erro": "Falha ao salvar no Supabase"})
+                else:
+                    print(f"Falha na extracao de dados completos")
+                    erros_total.append({"id_pncp": id_pncp, "erro": "Falha na extracao de dados"})
                 
                 # Pausa reduzida
                 await asyncio.sleep(0.2)
                 
             except Exception as e:
-                print(f"   ❌ Erro: {e}")
-                erros.append({"id_pncp": id_pncp, "erro": str(e)})
+                print(f"Erro: {e}")
+                erros_total.append({"id_pncp": id_pncp, "erro": str(e)})
         
         tempo_total = round(time.time() - start_time, 2)
+        
+        # Fecha driver
+        self.fechar_driver()
         
         resultado = {
             "success": True,
             "message": f"Extração inteligente concluída em {tempo_total}s",
-            "data_extracao": str(data_extracao),
-            "total_encontrados": len(editais_encontrados),
-            "total_novos": len(novos),
-            "total_atualizados": len(atualizados),
-            "total_erros": len(erros),
+            "periodo": f"{data_inicial} a {data_final}",
+            "dias_retroativos": dias_retroativos,
+            "total_encontrados": len(todos_editais),
+            "total_novos": len(novos_total),
+            "total_atualizados": len(atualizados_total),
+            "total_erros": len(erros_total),
             "tempo_execucao": tempo_total,
-            "editais_novos": novos,
-            "editais_atualizados": atualizados,
-            "erros": erros,
+            "editais_novos": novos_total,
+            "editais_atualizados": atualizados_total,
+            "erros": erros_total,
             "configuracao": {
-                "max_editais": max_editais,
                 "salvar_arquivos": salvar_arquivos,
-                "max_paginas": 3,
-                "limit_por_pagina": 25,
-                "estrategia": "inteligente"
+                "max_paginas": 50,
+                "limit_por_pagina": 100,
+                "estrategia": "inteligente_multiplos_dias"
             }
         }
         
-        print(f"\n🎉 EXTRAÇÃO INTELIGENTE CONCLUÍDA!")
-        print(f"📊 Encontrados: {resultado['total_encontrados']}")
-        print(f"🆕 Novos: {resultado['total_novos']}")
-        print(f"🔄 Atualizados: {resultado['total_atualizados']}")
-        print(f"❌ Erros: {resultado['total_erros']}")
-        print(f"⏱️ Tempo: {tempo_total}s")
+        print()
+        print("EXTRAÇÃO INTELIGENTE CONCLUÍDA!")
+        print(f"Periodo: {data_inicial} a {data_final}")
+        print(f"Encontrados: {resultado['total_encontrados']}")
+        print(f"Novos: {resultado['total_novos']}")
+        print(f"Atualizados: {resultado['total_atualizados']}")
+        print(f"Erros: {resultado['total_erros']}")
+        print(f"Tempo: {tempo_total}s")
         
         return resultado
